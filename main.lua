@@ -1,25 +1,27 @@
--- [[ KRYNT HUB - TAP SIMULATOR PRO ]]
+-- [[ KRYNT HUB - TAP SIMULATOR ULTIMATE ]]
 if game.GameId == 8779464785 or game.PlaceId == 9492820210 then
 
     local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
     local Window = Library.CreateLib("Krynt Hub | Tap Simulator", "BloodTheme")
 
-    -- [[ DRAGGABLE MINIMIZE BUTTON ]]
+    -- [[ ANTI-AFK LOGIC ]]
+    local VirtualUser = game:GetService("VirtualUser")
+    game:GetService("Players").LocalPlayer.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+
+    -- [[ DRAGGABLE TOGGLE BUTTON ]]
     local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
     local OpenBtn = Instance.new("TextButton", ScreenGui)
-    
-    OpenBtn.Name = "KryntToggle"
     OpenBtn.Size = UDim2.new(0, 50, 0, 50)
     OpenBtn.Position = UDim2.new(0, 10, 0.5, 0)
     OpenBtn.Text = "K"
     OpenBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
     OpenBtn.TextColor3 = Color3.new(1, 1, 1)
-    OpenBtn.Font = Enum.Font.GothamBold
-    OpenBtn.TextSize = 20
-    OpenBtn.Draggable = true -- THIS MAKES IT DRAGGABLE
-    
+    OpenBtn.Draggable = true
     local UIC = Instance.new("UICorner", OpenBtn)
-    UIC.CornerRadius = UDim.new(1, 0) -- Makes it a circle
+    UIC.CornerRadius = UDim.new(1, 0)
     
     OpenBtn.MouseButton1Click:Connect(function()
         Library:ToggleUI()
@@ -27,14 +29,14 @@ if game.GameId == 8779464785 or game.PlaceId == 9492820210 then
 
     -- [[ TABS ]]
     local Main = Window:NewTab("Main")
-    local Section = Main:NewSection("Fast Farming")
+    local Section = Main:NewSection("Auto Farming")
     
     local Eggs = Window:NewTab("Eggs")
     local ESection = Eggs:NewSection("Fast Hatching")
 
-    -- [[ 0.1s AUTO TAP ]]
+    -- [[ FAST TAP TOGGLE ]]
     _G.AutoTap = false
-    Section:NewToggle("Super Fast Tap (0.1s)", "Auto clicks the remote", function(state)
+    Section:NewToggle("Fast Remote Tap (0.1s)", "Taps super fast", function(state)
         _G.AutoTap = state
         if state then
             spawn(function()
@@ -46,9 +48,9 @@ if game.GameId == 8779464785 or game.PlaceId == 9492820210 then
         end
     end)
 
-    -- [[ 0.1s RAINBOW EGG HATCH ]]
+    -- [[ FAST HATCH TOGGLE ]]
     _G.FastHatch = false
-    ESection:NewToggle("Fast Hatch Rainbow Egg", "Hatch at light speed", function(state)
+    ESection:NewToggle("Fast Hatch Rainbow Egg", "0.1s Hatching", function(state)
         _G.FastHatch = state
         if state then
             spawn(function()
@@ -60,16 +62,21 @@ if game.GameId == 8779464785 or game.PlaceId == 9492820210 then
         end
     end)
 
-    -- [[ PLAYER TAB ]]
-    local Player = Window:NewTab("Player")
-    local PSection = Player:NewSection("Movement")
-    PSection:NewSlider("Speed", "Walk faster", 250, 16, function(s)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
+    -- [[ SETTINGS & BATTERY SAVER ]]
+    local Settings = Window:NewTab("Settings")
+    local SSection = Settings:NewSection("Performance")
+
+    local WhiteScreen = Instance.new("Frame", ScreenGui)
+    WhiteScreen.Size = UDim2.new(1, 0, 1, 0)
+    WhiteScreen.BackgroundColor3 = Color3.new(1, 1, 1)
+    WhiteScreen.Visible = false
+    WhiteScreen.ZIndex = 0
+
+    SSection:NewToggle("Battery Saver (White Screen)", "Reduces phone heat", function(state)
+        WhiteScreen.Visible = state
     end)
 
-    -- [[ SETTINGS ]]
-    local Settings = Window:NewTab("Settings")
-    Settings:NewSection("Script"):NewButton("Destroy Hub", "Removes everything", function()
+    SSection:NewButton("Destroy Script", "Exit Krynt Hub", function()
         _G.AutoTap = false
         _G.FastHatch = false
         ScreenGui:Destroy()
@@ -77,5 +84,5 @@ if game.GameId == 8779464785 or game.PlaceId == 9492820210 then
     end)
 
 else
-    game.Players.LocalPlayer:Kick("Krynt Hub: Use this in Tap Simulator!")
+    game.Players.LocalPlayer:Kick("Krynt Hub: Wrong Game!")
 end
