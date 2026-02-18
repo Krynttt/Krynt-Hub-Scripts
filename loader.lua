@@ -1,50 +1,71 @@
-
--- [[ KRYNT HUB OFFICIAL LOADER ]]
+-- [[ KRYNT HUB CUSTOM KEY SYSTEM ]]
 local GITHUB_KEY_URL = "https://raw.githubusercontent.com/Krynttt/Krynt-Hub-Scripts/main/key.txt"
 local GITHUB_MAIN_URL = "https://raw.githubusercontent.com/Krynttt/Krynt-Hub-Scripts/main/main.lua"
 
--- Ensure Orion is loaded safely
-local success, OrionLib = pcall(function() 
-    return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))() 
-end)
+-- Create the UI
+local sg = Instance.new("ScreenGui", game.CoreGui)
+sg.Name = "KryntKeySystem"
 
-if not success then 
-    warn("Krynt Hub: Failed to load Orion Library. Internet or Executor issue.")
-    return 
-end
+local frame = Instance.new("Frame", sg)
+frame.Size = UDim2.new(0, 300, 0, 200)
+frame.Position = UDim2.new(0.5, -150, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+local corner = Instance.new("UICorner", frame)
 
-local Window = OrionLib:MakeWindow({Name = "Krynt Hub | Key System", HidePremium = true, SaveConfig = false, IntroEnabled = false})
-local Tab = Window:MakeTab({Name = "Key System", Icon = "rbxassetid://4483345998"})
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 50)
+title.Text = "KRYNT HUB | KEY"
+title.TextColor3 = Color3.new(1, 0, 0)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.BackgroundTransparency = 1
 
-Tab:AddTextbox({
-    Name = "Enter Key",
-    Default = "",
-    TextDisappear = true,
-    Callback = function(Value)
-        local keySuccess, CorrectKey = pcall(function() return game:HttpGet(GITHUB_KEY_URL) end)
+local box = Instance.new("TextBox", frame)
+box.Size = UDim2.new(0.8, 0, 0, 40)
+box.Position = UDim2.new(0.1, 0, 0.35, 0)
+box.PlaceholderText = "Enter Key Here..."
+box.Text = ""
+box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+box.TextColor3 = Color3.new(1, 1, 1)
+local boxCorner = Instance.new("UICorner", box)
+
+local btn = Instance.new("TextButton", frame)
+btn.Size = UDim2.new(0.8, 0, 0, 40)
+btn.Position = UDim2.new(0.1, 0, 0.65, 0)
+btn.Text = "CHECK KEY"
+btn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+btn.TextColor3 = Color3.new(1, 1, 1)
+btn.Font = Enum.Font.GothamBold
+local btnCorner = Instance.new("UICorner", btn)
+
+-- Logic
+btn.MouseButton1Click:Connect(function()
+    btn.Text = "Verifying..."
+    local s, correctKey = pcall(function() return game:HttpGet(GITHUB_KEY_URL) end)
+    
+    if s then
+        local cleanCorrect = correctKey:gsub("%s+", "")
+        local cleanInput = box.Text:gsub("%s+", "")
         
-        if keySuccess then
-            -- Remove any hidden spaces/newlines
-            local cleanCorrectKey = CorrectKey:gsub("%s+", "")
-            local cleanInput = Value:gsub("%s+", "")
-
-            if cleanInput == cleanCorrectKey then
-                OrionLib:MakeNotification({Name = "Verified", Content = "Loading Krynt Hub...", Time = 3})
-                task.wait(1)
-                OrionLib:Destroy()
-                
-                -- Final Load of Main Script
-                local mainSuccess, mainCode = pcall(function() return game:HttpGet(GITHUB_MAIN_URL) end)
-                if mainSuccess then
-                    loadstring(mainCode)()
-                else
-                    warn("Krynt Hub: Could not find main.lua")
-                end
-            else
-                OrionLib:MakeNotification({Name = "Error", Content = "Wrong Key!", Time = 3})
+        if cleanInput == cleanCorrect then
+            btn.Text = "CORRECT!"
+            btn.BackgroundColor3 = Color3.new(0, 1, 0)
+            task.wait(1)
+            sg:Destroy() -- Remove Key System
+            
+            -- LOAD THE MAIN SCRIPT
+            local s2, mainCode = pcall(function() return game:HttpGet(GITHUB_MAIN_URL) end)
+            if s2 then
+                loadstring(mainCode)()
             end
         else
-            warn("Krynt Hub: Could not connect to GitHub key file.")
+            btn.Text = "WRONG KEY!"
+            btn.BackgroundColor3 = Color3.new(1, 0, 0)
+            task.wait(1)
+            btn.Text = "CHECK KEY"
         end
-    end      
-})
+    else
+        btn.Text = "CONNECTION ERROR"
+    end
+end)
