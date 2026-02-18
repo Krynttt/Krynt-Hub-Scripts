@@ -1,69 +1,77 @@
--- [[ KRYNT HUB - TAP SIMULATOR UNIVERSAL ]]
+-- [[ KRYNT HUB - TAP SIMULATOR PRO ]]
 if game.GameId == 8779464785 or game.PlaceId == 9492820210 then
 
     local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
     local Window = Library.CreateLib("Krynt Hub | Tap Simulator", "BloodTheme")
 
-    -- [[ MINIMIZE BUTTON SETUP ]]
-    local ScreenGui = Instance.new("ScreenGui")
-    local OpenBtn = Instance.new("TextButton")
-
-    ScreenGui.Parent = game.CoreGui
-    ScreenGui.Name = "KryntMinimize"
-
-    OpenBtn.Parent = ScreenGui
-    OpenBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0) -- Red
+    -- [[ MINIMIZE BUTTON ]]
+    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    local OpenBtn = Instance.new("TextButton", ScreenGui)
+    OpenBtn.Size = UDim2.new(0, 45, 0, 45)
     OpenBtn.Position = UDim2.new(0, 10, 0.5, 0)
-    OpenBtn.Size = UDim2.new(0, 50, 0, 50)
     OpenBtn.Text = "K"
+    OpenBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
     OpenBtn.TextColor3 = Color3.new(1, 1, 1)
-    OpenBtn.Draggable = true -- Allows you to move it around your screen
-
-    -- Make it a circle
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 100)
-    UICorner.Parent = OpenBtn
-
-    -- Toggle Function
+    OpenBtn.Draggable = true
+    local UIC = Instance.new("UICorner", OpenBtn)
+    UIC.CornerRadius = UDim.new(1, 0)
+    
     OpenBtn.MouseButton1Click:Connect(function()
         Library:ToggleUI()
     end)
 
     -- [[ TABS ]]
     local Main = Window:NewTab("Main")
-    local Farm = Main:NewSection("Automatic Farming")
+    local Section = Main:NewSection("Fast Farming")
     
-    local Settings = Window:NewTab("Settings")
-    local Manage = Settings:NewSection("Script Management")
+    local Eggs = Window:NewTab("Eggs")
+    local ESection = Eggs:NewSection("Fast Hatching")
 
-    -- [[ FARMING LOGIC ]]
+    -- [[ 0.1s REMOTE TAP TOGGLE ]]
     _G.AutoTap = false
-    Farm:NewToggle("Auto Tap", "Clicks for you", function(state)
+    Section:NewToggle("Super Fast Tap (0.1s)", "Turn ON to start tapping", function(state)
         _G.AutoTap = state
-        spawn(function()
-            while _G.AutoTap do
-                game:GetService("ReplicatedStorage").Events.Tap:FireServer()
-                task.wait(0.05)
-            end
-        end)
+        if state then
+            print("Auto Tap: STARTED")
+            spawn(function()
+                while _G.AutoTap do
+                    game:GetService("ReplicatedStorage").Events.Tap:FireServer()
+                    task.wait(0.1)
+                end
+                print("Auto Tap: STOPPED")
+            end)
+        end
     end)
 
-    -- [[ CANCEL EXECUTION / DESTROY ]]
-    Manage:NewButton("Destroy Script", "Stops everything and removes UI", function()
+    -- [[ 0.1s RAINBOW EGG HATCH TOGGLE ]]
+    _G.FastHatch = false
+    ESection:NewToggle("Fast Hatch Rainbow Egg", "Turn ON to start hatching", function(state)
+        _G.FastHatch = state
+        if state then
+            print("Fast Hatch: STARTED")
+            spawn(function()
+                while _G.FastHatch do
+                    local args = {
+                        [1] = "Rainbow Egg",
+                        [2] = "Single" 
+                    }
+                    game:GetService("ReplicatedStorage").Events.Hatch:InvokeServer(unpack(args))
+                    task.wait(0.1)
+                end
+                print("Fast Hatch: STOPPED")
+            end)
+        end
+    end)
+
+    -- [[ SETTINGS ]]
+    local Settings = Window:NewTab("Settings")
+    Settings:NewSection("Management"):NewButton("Destroy Script", "Remove everything", function()
         _G.AutoTap = false
-        _G.AutoRebirth = false
-        Library:ToggleUI() -- Hide UI
-        ScreenGui:Destroy() -- Remove Minimize Button
-        -- Effectively stops the script from running further
-    end)
-
-    -- [[ PLAYER TAB ]]
-    local Player = Window:NewTab("Player")
-    local PSection = Player:NewSection("Character")
-    PSection:NewSlider("WalkSpeed", "Speed", 250, 16, function(s)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
+        _G.FastHatch = false
+        ScreenGui:Destroy()
+        Library:ToggleUI()
     end)
 
 else
-    game.Players.LocalPlayer:Kick("Krynt Hub: Wrong Game!")
+    print("Wrong Game")
 end
