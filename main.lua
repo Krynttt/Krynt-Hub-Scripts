@@ -1,14 +1,7 @@
--- This is your actual cheat menu
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Krynt Hub | Tap Simulator", "BloodTheme")
-
-local Main = Window:NewTab("Main")
-local Section = Main:NewSection("Tap Simulator Cheats")
-
-Section:NewButton("Auto Tap (Coming Soon)", "Feature in progress", function()
-    print("Button clicked!")
-end)
-
-Section:NewSlider("Walkspeed", "Speed up", 200, 16, function(s)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
-end)
+print("MAIN.LUA HAS LOADED!")
+local sg = Instance.new("ScreenGui", game.CoreGui)
+local t = Instance.new("TextLabel", sg)
+t.Size = UDim2.new(0, 200, 0, 50)
+t.Position = UDim2.new(0.5, -100, 0.2, 0)
+t.Text = "KRYNT HUB LOADED"
+t.BackgroundColor3 = Color3.new(1, 0, 0)
