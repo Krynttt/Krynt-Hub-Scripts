@@ -1,90 +1,95 @@
--- KRYNT HUB: FULL UI EDITION
+-- KRYNT HUB: MOBILE COMPATIBLE + INF JUMP
+local Player = game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- 1. Create the Main Container
+-- 1. Create the UI Container (Using PlayerGui for better Delta compatibility)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KryntHubUI"
-ScreenGui.Parent = CoreGui
+ScreenGui.Name = "KryntHub"
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
 
--- 2. Create the Background Frame (The Menu)
+-- 2. Main Menu Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 180, 0, 120) -- Small and mobile friendly
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 200, 0, 180)
 MainFrame.Active = true
-MainFrame.Draggable = true -- Hold the top to move it
+MainFrame.Draggable = true -- Hold the title to move
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = Tool.new(0, 10)
 Corner.Parent = MainFrame
 
--- 3. Title Label
+-- 3. Title Bar
 local Title = Instance.new("TextLabel")
 Title.Parent = MainFrame
-Title.BackgroundTransparency = 1
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Font = Enum.Font.SourceSansBold
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.BackgroundColor3 = Color3.fromRGB(255, 170, 0) -- Gold Title
 Title.Text = "Krynt Hub Scripts"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextColor3 = Color3.fromRGB(0, 0, 0)
 Title.TextSize = 18
+Title.Font = Enum.Font.SourceSansBold
 
--- 4. Toggle Button
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Parent = MainFrame
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Start Red
-ToggleBtn.Position = UDim2.new(0.1, 0, 0.4, 0)
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.Text = "AUTO TAP: OFF"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 16
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.Parent = Title
 
-local BtnCorner = Instance.new("UICorner")
-BtnCorner.Parent = ToggleBtn
+-- 4. Auto Tap Button
+local TapBtn = Instance.new("TextButton")
+TapBtn.Parent = MainFrame
+TapBtn.Position = UDim2.new(0.1, 0, 0.25, 0)
+TapBtn.Size = UDim2.new(0.8, 0, 0, 40)
+TapBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+TapBtn.Text = "Auto Tap: OFF"
+TapBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TapBtn.Font = Enum.Font.SourceSansBold
 
--- 5. THE LOGIC (The most important part)
+-- 5. Infinite Jump Button
+local JumpBtn = Instance.new("TextButton")
+JumpBtn.Parent = MainFrame
+JumpBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+JumpBtn.Size = UDim2.new(0.8, 0, 0, 40)
+JumpBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+JumpBtn.Text = "Inf Jump: OFF"
+JumpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+JumpBtn.Font = Enum.Font.SourceSansBold
+
+-- [ LOGIC ]
 _G.AutoTap = false
-local clickRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Click")
+_G.InfJump = false
 
--- This loop runs FOREVER but only clicks if _G.AutoTap is true
+-- Tapping Loop
 task.spawn(function()
+    local Events = game:GetService("ReplicatedStorage"):WaitForChild("Events")
+    local Click = Events:WaitForChild("Click")
     while true do
-        if _G.AutoTap == true then
-            clickRemote:FireServer(true)
+        if _G.AutoTap then
+            Click:FireServer(true)
         end
-        task.wait(0.1) -- Your requested 0.1s speed
+        task.wait(0.1)
     end
 end)
 
--- 6. Button Click Connection
-ToggleBtn.MouseButton1Click:Connect(function()
-    -- This flips the value: if it was false, it becomes true.
+-- Infinite Jump Logic
+UIS.JumpRequest:Connect(function()
+    if _G.InfJump then
+        Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
+-- Button Click Events
+TapBtn.MouseButton1Click:Connect(function()
     _G.AutoTap = not _G.AutoTap
-    
-    if _G.AutoTap then
-        ToggleBtn.Text = "AUTO TAP: ON"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50) -- Green
-        print("Auto-Tap Started")
-    else
-        ToggleBtn.Text = "AUTO TAP: OFF"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Red
-        print("Auto-Tap Stopped")
-    end
+    TapBtn.Text = _G.AutoTap and "Auto Tap: ON" or "Auto Tap: OFF"
+    TapBtn.BackgroundColor3 = _G.AutoTap and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
 end)
 
--- 7. Auto Breakables (Always on)
-task.spawn(function()
-    local breakRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Break")
-    while true do
-        local folder = workspace:FindFirstChild("Breakables")
-        if folder then
-            for _, v in pairs(folder:GetChildren()) do
-                breakRemote:FireServer(v.Name)
-            end
-        end
-        task.wait(0.5)
-    end
+JumpBtn.MouseButton1Click:Connect(function()
+    _G.InfJump = not _G.InfJump
+    JumpBtn.Text = _G.InfJump and "Inf Jump: ON" or "Inf Jump: OFF"
+    JumpBtn.BackgroundColor3 = _G.InfJump and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
 end)
+
+print("Krynt Hub Successfully Loaded!")
