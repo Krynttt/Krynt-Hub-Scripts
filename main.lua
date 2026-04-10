@@ -580,6 +580,43 @@ repeat task.wait(1) until Replication.Loaded and Replication.Data and Replicatio
 for attempt = 1, State.maxRetries do
     success, State.errorMsg = pcall(function()
 
+State.keyFile = "krynthub_key.txt"
+
+State.validKeys = {
+    ["krynthubpremium"] = true
+}
+
+function State:VerifyKey(inputKey)
+    if self.validKeys[inputKey] then
+        writefile(self.keyFile, inputKey)
+        return true
+    end
+    return false
+end
+
+function State:LoadKey()
+    if isfile(self.keyFile) then
+        local savedKey = readfile(self.keyFile)
+        if self.validKeys[savedKey] then
+            return true
+        end
+    end
+    return false
+end
+
+-- 🔥 CHECK KEY
+local isValid = State:LoadKey()
+
+if not isValid then
+    local userInput = "krynthubpremium" -- 🔥 change this to UI input later
+
+    if not State:VerifyKey(userInput) then
+        return warn("Invalid Key")
+    end
+end
+
+print("Premium Access Granted ✅")
+            
         local requestFunc = (syn and syn.request) or (http and http.request) or request
         if not requestFunc then
             warn("Your executor does not support HTTP requests.")
