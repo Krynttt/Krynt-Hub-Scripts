@@ -678,25 +678,7 @@ for attempt = 1, State.maxRetries do
         State.BuildUI = function()
 
             State.Tabs.Home:AddParagraph("GratitudeMessage", {
-                Title = "Thank You!", Content = "I honestly just wanted to say how incredibly grateful I am for everyone using this script. Building this has been such a fun journey and a great learning experience (I do use a lot of AI still...). It means the world to me that you guys are enjoying it. Thank you for the support, and I hope this script makes your grind a little bit easier! I also want to give a HUGEEEEEE shoutout to LDS. He has been the greatest help and inspiration, always helping me with understanding things, and somehow putting up with my stupid questions.", TitleAlignment = "Middle"
-            })
-
-            State.Tabs.Home:AddButton({
-                Title = "My Discord Server", Description = "Join for updates and support! (Click to Copy)", Callback = function()
-                    setclipboard("https://discord.gg/XknHJddsqQ")
-                    Library:Notify({
-                        Title = "Success", Content = "Discord Invite Copied!", Duration = 3
-                    })
-                end
-            })
-
-            State.Tabs.Home:AddButton({
-                Title = "LDS's Discord Server", Description = "Join for more scripts! (Click to Copy)", Callback = function()
-                    setclipboard("https://discord.gg/SWjt6wyGdr")
-                    Library:Notify({
-                        Title = "Success", Content = "Discord Invite Copied!", Duration = 3
-                    })
-                end
+                Title = "Thank You For Purchasing My Script!", Content = "Filipino Scripter: Rodel Tambasacan", TitleAlignment = "Middle"
             })
 
             AntiAfk = State.Tabs.Utility:AddSection("Anti AFK")
