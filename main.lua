@@ -7081,7 +7081,7 @@ local AutoClickSection = State.Tabs.Main:AddSection("Auto Click")
             if not game:IsLoaded() then game.Loaded:Wait() end
 
                 State.Window = Library:CreateWindow{
-                Title = "Tap Simulator", SubTitle = "By Krynt Hub", TabWidth = 165, Size = UDim2.fromOffset(580, 460), Resize = false, Theme = "Vynixu", MinimizeKey = Enum.KeyCode.LeftShift, Acrylic = true, Transparency = false
+                Title = "EASTER 🐰|Tap Simulator", SubTitle = "By Krynt Hub", TabWidth = 165, Size = UDim2.fromOffset(580, 460), Resize = false, Theme = "Vynixu", MinimizeKey = Enum.KeyCode.LeftShift, Acrylic = true, Transparency = false
             }
 
             State.Tabs = {
