@@ -580,43 +580,6 @@ repeat task.wait(1) until Replication.Loaded and Replication.Data and Replicatio
 for attempt = 1, State.maxRetries do
     success, State.errorMsg = pcall(function()
 
-State.keyFile = "krynthub_key.txt"
-
-State.validKeys = {
-    ["krynthubpremium"] = true
-}
-
-function State:VerifyKey(inputKey)
-    if self.validKeys[inputKey] then
-        writefile(self.keyFile, inputKey)
-        return true
-    end
-    return false
-end
-
-function State:LoadKey()
-    if isfile(self.keyFile) then
-        local savedKey = readfile(self.keyFile)
-        if self.validKeys[savedKey] then
-            return true
-        end
-    end
-    return false
-end
-
--- 🔥 CHECK KEY
-local isValid = State:LoadKey()
-
-if not isValid then
-    local userInput = "krynthubpremium" -- 🔥 change this to UI input later
-
-    if not State:VerifyKey(userInput) then
-        return warn("Invalid Key")
-    end
-end
-
-print("Premium Access Granted ✅")
-            
         local requestFunc = (syn and syn.request) or (http and http.request) or request
         if not requestFunc then
             warn("Your executor does not support HTTP requests.")
@@ -7081,7 +7044,7 @@ local AutoClickSection = State.Tabs.Main:AddSection("Auto Click")
             if not game:IsLoaded() then game.Loaded:Wait() end
 
                 State.Window = Library:CreateWindow{
-                Title = "EASTER 🐰|Tap Simulator", SubTitle = "By Krynt Hub", TabWidth = 165, Size = UDim2.fromOffset(580, 460), Resize = false, Theme = "Vynixu", MinimizeKey = Enum.KeyCode.LeftShift, Acrylic = true, Transparency = false
+                Title = "EASTER 🐰 | Tap Simulator", SubTitle = "By Krynt Hub", TabWidth = 165, Size = UDim2.fromOffset(580, 460), Resize = false, Theme = "Vynixu", MinimizeKey = Enum.KeyCode.LeftShift, Acrylic = true, Transparency = false
             }
 
             State.Tabs = {
@@ -7180,42 +7143,6 @@ local AutoClickSection = State.Tabs.Main:AddSection("Auto Click")
                     end
                 end
             })
-
-            State.HideButtonToggle = State.AppearanceSection:AddToggle("HideOpenClose", {
-                Title = "Hide Open/Close Button", Default = false, Callback = function(Value)
-                    local function toggleAll(parent)
-                        for _, child in ipairs(parent:GetChildren()) do
-                            if child.Name == "DuckyToggleGui" then
-                                child.Enabled = not Value
-                            end
-                        end
-                    end
-                    toggleAll(CoreGui)
-                    toggleAll(State.LocalPlayer:WaitForChild("PlayerGui"))
-                end
-            })
-
-            if not State.frame then
-                State.frame = getWindowFrame(State.Window)
-            end
-
-            if State.frame then
-                State.inputText = State.SizeInput.Value or ""
-                local w, h = parseSize(State.inputText)
-                if not w or not h then w, h = 580, 460 end
-                State.frame.Size = UDim2.fromOffset(580, 460)
-                State.shrinkTween = TweenService:Create(State.frame, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.fromOffset(1, 1)})
-                State.shrinkTween:Play()
-                State.shrinkTween.Completed:Wait()
-                State.frame.Visible = false
-                State.frame.Size = UDim2.fromOffset(1000,1000)
-                task.wait(0.5)
-                State.frame.Size = UDim2.fromOffset(1,1)
-                State.frame.Visible = true
-                State.expandTween = TweenService:Create(State.frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(w, h)})
-                State.expandTween:Play()
-                State.expandTween.Completed:Wait()
-            end
 
             SaveManager:SetLibrary(Library)
             InterfaceManager:SetLibrary(Library)
