@@ -1,111 +1,458 @@
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Cleanup duplicate GUIs
-if CoreGui:FindFirstChild("KryntPSLoader") then
-    CoreGui.KryntPSLoader:Destroy()
+local BuyCaseRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Game"):WaitForChild("CaseTriggered")
+local spinRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Rewards"):WaitForChild("SpinRewards")
+local sellThisRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Game"):WaitForChild("SellThis")
+local spinAmountLabel = lp.PlayerGui:WaitForChild("SpinUI").MainFrame.SpinAmount
+
+local myPlot = nil
+
+local function assignMyPlot()
+    local function clean(str) return str:gsub("%W", ""):lower() end
+    local myCleanName = clean(lp.Name)
+    local myCleanDisplayName = clean(lp.DisplayName)
+    
+    for i = 1, 8 do
+        local plotName = "Plot_" .. i
+        local plotFolder = workspace.Plots:FindFirstChild(plotName)
+        if plotFolder then
+            local nameplate = plotFolder:FindFirstChild("Plot_Models") and plotFolder.Plot_Models:FindFirstChild("BaseModel") and plotFolder.Plot_Models.BaseModel:FindFirstChild("BillBoardC")
+            if nameplate then
+                local cleanLabel = clean(nameplate.Nameplate.SurfaceGui.NameOf.Text)
+                if string.find(cleanLabel, myCleanName) or string.find(cleanLabel, myCleanDisplayName) then
+                    myPlot = plotFolder
+                    break
+                end
+            end
+        end
+    end
 end
 
--- Main UI Setup
-local sg = Instance.new("ScreenGui")
-sg.Name = "KryntPSLoader"
-sg.Parent = CoreGui
+assignMyPlot()
+if not myPlot then myPlot = workspace.Plots.Plot_1 end
 
-local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 320, 0, 200)
-main.Position = UDim2.new(0.5, -160, 0.5, -100)
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true -- You can move it around
-main.Parent = sg
+local baseModel = myPlot.Plot_Models.BaseModel
+local conveyor = baseModel.PackConveyor
+local spawnClick = baseModel.ButtonModel.PacketClick.ClickDetector
 
-local corner = Instance.new("UICorner", main)
-corner.CornerRadius = UDim.new(0, 10)
+local pickupCFrame = baseModel.BoxStand.CFrame * CFrame.new(0, 3, 0)
+local sellCFrame = baseModel.SellButton.SellP.CFrame * CFrame.new(0, 2, 0)
+local boxPrompt = baseModel.BoxStand:FindFirstChild("ProximityPrompt")
 
--- Header
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 45)
-title.Text = "Krynt Hub"
-title.TextColor3 = Color3.fromRGB(0, 255, 150)
-title.TextSize = 22
-title.Font = Enum.Font.GothamBold
-title.BackgroundTransparency = 1
-title.Parent = main
+local caseRarirites = {"Common", "Rare", "Epic", "Elite", "Legendary", "Mythic", "Secret", "Limited", "Exclusive", "Timeless", "Godly", "Soul", "Fruit", "Ninja", "Historical", "Shadow", "Frost", "Demon", "Arsenal"}
+local selectedChestRarities = {} 
 
-local subTitle = Instance.new("TextLabel")
-subTitle.Size = UDim2.new(1, 0, 0, 20)
-subTitle.Position = UDim2.new(0, 0, 0, 38)
-subTitle.Text = "Private Server Copy/Paster"
-subTitle.TextColor3 = Color3.fromRGB(150, 150, 150)
-subTitle.TextSize = 13
-subTitle.Font = Enum.Font.Gotham
-subTitle.BackgroundTransparency = 1
-subTitle.Parent = main
-
--- The Display/Status Label
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0, 280, 0, 40)
-statusLabel.Position = UDim2.new(0.5, -140, 0, 75)
-statusLabel.Text = "Status: Ready"
-statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.TextSize = 14
-statusLabel.Font = Enum.Font.Code
-statusLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-statusLabel.Parent = main
-Instance.new("UICorner", statusLabel).CornerRadius = UDim.new(0, 6)
-
--- The Button to trigger the action
-local actionBtn = Instance.new("TextButton")
-actionBtn.Size = UDim2.new(0, 280, 0, 45)
-actionBtn.Position = UDim2.new(0.5, -140, 0, 130)
-actionBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-actionBtn.Text = "GET PS LINK"
-actionBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
-actionBtn.Font = Enum.Font.GothamBold
-actionBtn.TextSize = 16
-actionBtn.Parent = main
-
-local btnCorner = Instance.new("UICorner", actionBtn)
-
--- Close Button
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 30, 0, 30)
-close.Position = UDim2.new(1, -35, 0, 5)
-close.Text = "×"
-close.TextColor3 = Color3.fromRGB(255, 100, 100)
-close.TextSize = 25
-close.BackgroundTransparency = 1
-close.Parent = main
-close.MouseButton1Click:Connect(function() sg:Destroy() end)
-
--- Script Functionality
-actionBtn.MouseButton1Click:Connect(function()
-    actionBtn.Text = "LOADING..."
-    actionBtn.Active = false
-    task.wait(1) -- Visual feedback delay
-    
-    local code = game.PrivateServerLinkCode
-    
-    if code and code ~= "" then
-        local fullLink = "https://www.roblox.com/share?code=" .. code .. "&type=Server"
-        
-        -- Show the link in the status box
-        statusLabel.Text = "Link: " .. code:sub(1,10) .. "..." 
-        
-        -- Copy to clipboard
-        if setclipboard then
-            setclipboard(fullLink)
-            actionBtn.Text = "COPIED TO CLIPBOARD!"
-            actionBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            actionBtn.Text = "COPIED (Manual backup in console)"
-            print("Full Link: " .. fullLink)
-        end
-    else
-        statusLabel.Text = "ERROR: No PS Code Found!"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        actionBtn.Text = "TRY AGAIN"
-        actionBtn.Active = true
+local function isMatch(selectedTable, value)
+    if not selectedTable or next(selectedTable) == nil then return false end
+    for k, v in pairs(selectedTable) do
+        local key = tostring(type(k) == "string" and k or v)
+        if string.find(string.lower(value), string.lower(key)) then return true end
     end
+    return false
+end
+
+local function getKnifeValue(tool)
+    local billboard = tool:FindFirstChild("BillboardGui", true)
+    local givingAmount = billboard and billboard:FindFirstChild("GivingAmount")
+    
+    if givingAmount and givingAmount:IsA("TextLabel") then
+        local cleanString = givingAmount.Text:gsub("[$,/knife%s]", "")
+        return tonumber(cleanString) or 0
+    end
+    return 0
+end
+
+local function findCurrentBest()
+    local backpack = lp:WaitForChild("Backpack")
+    local best = nil
+    local high = -1
+    
+    for _, item in pairs(backpack:GetChildren()) do
+        if item:IsA("Tool") and not item:FindFirstChildOfClass("Model") then
+            local val = getKnifeValue(item)
+            if val > high then
+                high = val
+                best = item
+            end
+        end
+    end
+    return best
+end
+
+local function findMatchingChest()
+    local backpack = lp:WaitForChild("Backpack")
+    for _, item in pairs(backpack:GetChildren()) do
+        if item:IsA("Tool") then
+            local caseModel = item:FindFirstChildOfClass("Model")
+            if caseModel then
+                local rarity = caseModel.Name
+                if isMatch(selectedChestRarities, rarity) then
+                    return item
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function fireFarPrompt(prompt)
+    if prompt and prompt:IsA("ProximityPrompt") then
+        local oldDist = prompt.MaxActivationDistance
+        local oldLos = prompt.RequiresLineOfSight
+        prompt.MaxActivationDistance = 9e9
+        prompt.RequiresLineOfSight = false
+        fireproximityprompt(prompt)
+        task.wait(0.05)
+        prompt.MaxActivationDistance = oldDist
+        prompt.RequiresLineOfSight = oldLos
+    end
+end
+
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+
+local Window = Library:CreateWindow({
+    Title = "MKF Premium",
+    Center = true,
+    AutoShow = true,
+    TabWidth = 160,
+    Footer = "MKF Premium 👑"
+})
+
+local Options = Library.Options
+local Toggles = Library.Toggles
+local MainTab = Window:AddTab("MKF Premium", "box")
+
+local FarmBox = MainTab:AddLeftGroupbox("Economy & Farming")
+local PlotBox = MainTab:AddRightGroupbox("Plot & Chests")
+
+FarmBox:AddDropdown("TargetCases", {
+    Text = "Rarities to Auto Buy",
+    Default = 1,
+    Values = caseRarirites,
+    Multi = true,
+})
+
+local isBuying = false
+FarmBox:AddToggle("AutoRollSnipe", { Text = "Auto Roll & Buy Targets", Default = false })
+
+if conveyor:FindFirstChild("SpawnedCase") then
+    conveyor.SpawnedCase.ChildAdded:Connect(function(child)
+        if not Toggles.AutoRollSnipe.Value then return end
+        
+        task.spawn(function()
+            task.wait(0.05)
+            local rLabel = child:FindFirstChild("Rarity", true)
+            if rLabel then
+                local timeout = 0
+                while (rLabel.Text == "" or rLabel.Text == "Label") and timeout < 50 do
+                    task.wait(0.05)
+                    timeout = timeout + 1
+                end
+                
+                local curRarity = rLabel.Text
+                local targets = Options.TargetCases.Value
+                
+                if type(targets) == "table" and targets[curRarity] then
+                    isBuying = true 
+                    pcall(function() BuyCaseRemote:FireServer() end)
+                    task.wait(0.6)
+                    isBuying = false 
+                end
+            end
+        end)
+    end)
+end
+
+Toggles.AutoRollSnipe:OnChanged(function()
+    task.spawn(function()
+        while Toggles.AutoRollSnipe.Value do
+            pcall(function() 
+                if spawnClick and not isBuying then 
+                    fireclickdetector(spawnClick) 
+                end
+            end)
+            task.wait(0.05)
+        end
+    end)
+end)
+
+FarmBox:AddToggle("AutoSell", { Text = "Master Sell Loop (Box Carry)", Default = false })
+Toggles.AutoSell:OnChanged(function()
+    task.spawn(function()
+        while Toggles.AutoSell.Value do
+            pcall(function()
+                local char = lp.Character or lp.CharacterAdded:Wait()
+                local root = char:WaitForChild("HumanoidRootPart")
+                
+                local returnPos = root.CFrame
+                root.CFrame = pickupCFrame
+                task.wait(0.4)
+                
+                local pTimeout = 0
+                while Toggles.AutoSell.Value and not char:FindFirstChild("OpenBox") and pTimeout < 40 do
+                    if boxPrompt then fireFarPrompt(boxPrompt) end
+                    task.wait(0.1)
+                    pTimeout = pTimeout + 1
+                end
+                
+                if char:FindFirstChild("OpenBox") then
+                    root.CFrame = sellCFrame
+                    task.wait(0.5)
+                    
+                    local sTimeout = 0
+                    while char:FindFirstChild("OpenBox") and sTimeout < 50 do
+                        task.wait(0.1)
+                        sTimeout = sTimeout + 1
+                    end
+                end
+                
+                root.CFrame = returnPos
+            end)
+            task.wait(1)
+        end
+    end)
+end)
+
+FarmBox:AddToggle("AutoSpin", { Text = "Auto Spam Spins", Default = false })
+Toggles.AutoSpin:OnChanged(function()
+    task.spawn(function()
+        while Toggles.AutoSpin.Value do
+            pcall(function()
+                local spinCount = tonumber(string.match(spinAmountLabel.Text, "%d+")) or 0
+                if spinCount > 0 then
+                    spinRemote:FireServer()
+                end
+            end)
+            task.wait(0.1)
+        end
+    end)
+end)
+
+PlotBox:AddDropdown("ChestRarities", {
+    Text = "Chests to Place",
+    Default = 1,
+    Values = caseRarirites,
+    Multi = true,
+})
+Options.ChestRarities:OnChanged(function()
+    selectedChestRarities = Options.ChestRarities.Value
+end)
+
+PlotBox:AddToggle("AutoPlaceChest", { Text = "Auto Place Selected Chests", Default = false })
+Toggles.AutoPlaceChest:OnChanged(function()
+    task.spawn(function()
+        while Toggles.AutoPlaceChest.Value do
+            pcall(function()
+                local slotsFolder = myPlot.Plot_Models.BaseModel:FindFirstChild("Slots")
+                local char = lp.Character or lp.CharacterAdded:Wait()
+                local root = char:WaitForChild("HumanoidRootPart")
+                local hum = char:WaitForChild("Humanoid")
+                local oldPos = root.CFrame
+
+                for _, slot in pairs(slotsFolder:GetChildren()) do
+                    if not Toggles.AutoPlaceChest.Value then break end
+                    
+                    local standPart = slot:FindFirstChild("StandPart")
+                    local prompt = standPart and standPart:FindFirstChild("ProximityPrompt")
+
+                    if prompt and prompt.ActionText == "Place" then
+                        local chestToUse = findMatchingChest()
+                        
+                        if chestToUse then
+                            hum:EquipTool(chestToUse)
+                            task.wait(0.1)
+
+                            root.CFrame = standPart.CFrame * CFrame.new(0, 3, 0)
+                            task.wait(0.15)
+                            
+                            local attempts = 0
+                            while prompt.ActionText == "Place" and attempts < 5 do
+                                fireproximityprompt(prompt)
+                                task.wait(0.25)
+                                attempts = attempts + 1
+                            end
+                        else
+                            break 
+                        end
+                    end
+                end
+                root.CFrame = oldPos
+            end)
+            task.wait(0.5)
+        end
+    end)
+end)
+
+PlotBox:AddToggle("AutoOpen", { Text = "Auto Open Chests (Physical)", Default = false })
+Toggles.AutoOpen:OnChanged(function()
+    task.spawn(function()
+        while Toggles.AutoOpen.Value do
+            pcall(function()
+                local slotsFolder = myPlot.Plot_Models.BaseModel:FindFirstChild("Slots")
+                local char = lp.Character or lp.CharacterAdded:Wait()
+                local root = char:WaitForChild("HumanoidRootPart")
+                local oldPos = root.CFrame
+
+                if slotsFolder then
+                    for i = 1, 10 do
+                        if not Toggles.AutoOpen.Value then break end
+                        
+                        local sObj = slotsFolder:FindFirstChild("Slot" .. i)
+                        if sObj then
+                            local standPart = sObj:FindFirstChild("StandPart")
+                            local openPrompt = standPart and standPart:FindFirstChild("ProximityPrompt")
+                            
+                            if openPrompt and (openPrompt.ActionText == "Open" or openPrompt.ActionText == "Skip") then
+                                root.CFrame = standPart.CFrame * CFrame.new(0, 3, 0)
+                                task.wait(0.15)
+                                fireproximityprompt(openPrompt)
+                            end
+                        end
+                    end
+                end
+                root.CFrame = oldPos
+            end)
+            task.wait(0.5)
+        end
+    end)
+end)
+
+PlotBox:AddToggle("AutoDropKnife", { Text = "Auto Drop Knife Fast", Default = false })
+Toggles.AutoDropKnife:OnChanged(function()
+    task.spawn(function()
+        while Toggles.AutoDropKnife.Value do
+            pcall(function()
+                local slotsFolder = myPlot.Plot_Models.BaseModel:FindFirstChild("Slots")
+                if slotsFolder then
+                    for i = 1, 10 do
+                        local sObj = slotsFolder:FindFirstChild("Slot" .. i)
+                        if sObj then
+                            local standModel = sObj:FindFirstChild("StandModel")
+                            if standModel then
+                                for _, caseModel in ipairs(standModel:GetChildren()) do
+                                    if caseModel:IsA("Model") then
+                                        local prompts = caseModel:GetDescendants()
+                                        for _, prompt in ipairs(prompts) do
+                                            if prompt:IsA("ProximityPrompt") and prompt.ActionText ~= "Place" and prompt.ActionText ~= "Remove" then
+                                                fireFarPrompt(prompt)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait() 
+        end
+    end)
+end)
+
+PlotBox:AddButton("Equip Best Knives", function()
+    local slotsFolder = myPlot.Plot_Models.BaseModel:FindFirstChild("Slots")
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+    local oldPos = root.CFrame
+
+    for _, slot in pairs(slotsFolder:GetChildren()) do
+        local standPart = slot:FindFirstChild("StandPart")
+        local prompt = standPart and standPart:FindFirstChild("ProximityPrompt")
+
+        if prompt and prompt.ActionText == "Place" then
+            local hasCaseModel = false
+            if slot:FindFirstChild("StandModel") then
+                for _, child in pairs(slot.StandModel:GetChildren()) do
+                    if string.find(string.lower(child.Name), "case") or string.find(string.lower(child.Name), "chest") then
+                        hasCaseModel = true
+                        break
+                    end
+                end
+            end
+
+            if not hasCaseModel then
+                local knifeToUse = findCurrentBest() 
+                
+                if knifeToUse then
+                    hum:EquipTool(knifeToUse)
+                    task.wait(0.1)
+
+                    root.CFrame = standPart.CFrame * CFrame.new(0, 3, 0)
+                    task.wait(0.12) 
+                    
+                    local attempts = 0
+                    while prompt.ActionText ~= "Remove" and prompt.ActionText ~= "Open" and attempts < 5 do
+                        fireproximityprompt(prompt)
+                        task.wait(0.2)
+                        attempts = attempts + 1
+                    end
+                else
+                    break 
+                end
+            end
+        end
+    end
+
+    root.CFrame = oldPos
+end)
+
+PlotBox:AddButton("Remove All Knives", function()
+    local slotsFolder = myPlot.Plot_Models.BaseModel:FindFirstChild("Slots")
+    if not slotsFolder then return end
+
+    local char = lp.Character or lp.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart")
+    local oldPos = root.CFrame
+
+    for _, slot in pairs(slotsFolder:GetChildren()) do
+        local standPart = slot:FindFirstChild("StandPart")
+        local prompt = standPart and standPart:FindFirstChild("ProximityPrompt")
+        
+        if prompt and prompt.ActionText == "Remove" then
+            root.CFrame = standPart.CFrame * CFrame.new(0, 3, 0)
+            task.wait(0.1) 
+            local attempts = 0
+
+            while prompt.ActionText == "Remove" and attempts < 10 do
+                fireproximityprompt(prompt)
+                task.wait(0.15)
+                attempts = attempts + 1
+            end
+        end
+    end
+
+    root.CFrame = oldPos 
+end)
+
+PlotBox:AddToggle("AutoUpgradeAll", { Text = "Upgrades All Knives", Default = false })
+Toggles.AutoUpgradeAll:OnChanged(function()
+    task.spawn(function()
+        while Toggles.AutoUpgradeAll.Value do
+            pcall(function()
+                local slotsFolder = myPlot.Plot_Models.BaseModel:FindFirstChild("Slots")
+                if slotsFolder then
+                    for _, slot in pairs(slotsFolder:GetChildren()) do
+                        if not Toggles.AutoUpgradeAll.Value then break end
+
+                        local upgradePart = slot:FindFirstChild("UpgradePart")
+                        if upgradePart then
+                            local priceLabel = upgradePart:FindFirstChild("Price", true)
+                            
+                            if priceLabel and priceLabel.Text ~= "Max" then
+                                local cd = upgradePart:FindFirstChild("ClickDetector")
+                                if cd then
+                                    fireclickdetector(cd)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.5)
+        end
+    end)
 end)
