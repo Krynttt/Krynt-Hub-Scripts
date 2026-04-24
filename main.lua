@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
 
 local BuyCaseRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Game"):WaitForChild("CaseTriggered")
 local spinRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Rewards"):WaitForChild("SpinRewards")
@@ -229,6 +230,15 @@ Toggles.AutoSpin:OnChanged(function()
             task.wait(0.1)
         end
     end)
+end)
+
+FarmBox:AddToggle("AntiAFK", { Text = "Anti AFK", Default = false })
+lp.Idled:Connect(function()
+    if Toggles.AntiAFK.Value then
+        VirtualUser:Button2Down(Vector2.zero, workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera.CFrame)
+    end
 end)
 
 PlotBox:AddDropdown("ChestRarities", {
