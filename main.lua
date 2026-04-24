@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -125,7 +124,7 @@ local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "My Knife Farm🔪|Krynt Hub",
+    Title = "MKF Premium",
     Center = true,
     AutoShow = true,
     TabWidth = 160,
