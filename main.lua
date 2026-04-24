@@ -1,3 +1,29 @@
+local inputKey = "KEY-12345-ABCDE" -- In a real UI, this would be from a TextBox
+
+-- 1. Fetch your secret whitelist from GitHub
+local whitelistURL = "https://raw.githubusercontent.com/YourName/YourRepo/main/keys.lua"
+local success, result = pcall(function()
+    return loadstring(game:HttpGet(whitelistURL))()
+end)
+
+-- 2. Check if the fetching worked
+if not success or type(result) ~= "table" then
+    print("Error connecting to the key server.")
+    return
+end
+
+-- 3. Verify the key
+if result[inputKey] then
+    print("Key Verified! Welcome to the Hub.")
+    
+    -- YOUR ACTUAL SCRIPT GOES BELOW HERE --
+    print("Loading game features...")
+    
+else
+    -- If the key isn't in your GitHub table
+    game.Players.LocalPlayer:Kick("Invalid Key! Purchase at Krynt's DGC.")
+end
+
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
