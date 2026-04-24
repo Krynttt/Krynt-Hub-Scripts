@@ -1,42 +1,4 @@
--- [[ KRYNT HUB OFFICIAL LOADER ]] --
 
--- Settings
-local inputKey = "KRYNT2026" -- The buyer enters their key here
-local whitelistURL = "https://raw.githubusercontent.com/Krynttt/Krynt-Hub-Scripts/refs/heads/main/key.lua"
-local mainHubURL = "https://raw.githubusercontent.com/Krynttt/Krynt-Hub-Scripts/refs/heads/main/main.lua"
-
-print("---------------------------------")
-print("Initializing Krynt Hub...")
-print("---------------------------------")
-
--- 1. Fetch Key Database
-local success, keysTable = pcall(function()
-    return loadstring(game:HttpGet(whitelistURL))()
-end)
-
--- 2. Check if Database is reachable
-if not success or type(keysTable) ~= "table" then
-    warn("Krynt Hub: Error connecting to server. Please try again later.")
-    return
-end
-
--- 3. Verify Key
-if keysTable[inputKey] then
-    print("Krynt Hub: Access Granted! Welcome.")
-    
-    -- 4. Load the Actual Script
-    local loadStatus, err = pcall(function()
-        loadstring(game:HttpGet(mainHubURL))()
-    end)
-    
-    if not loadStatus then
-        warn("Krynt Hub: Failed to execute main script. Error: " .. tostring(err))
-    end
-else
-    -- 5. Handle Invalid Key
-    local player = game.Players.LocalPlayer
-    player:Kick("\n[Krynt Hub Security]\nInvalid Key Detected!\n\nPlease purchase a valid license from Krynt's DGC.")
-end
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
