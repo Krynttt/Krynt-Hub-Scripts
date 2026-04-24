@@ -1,29 +1,42 @@
-local inputKey = "KEY-12345-ABCDE" -- In a real UI, this would be from a TextBox
+-- [[ KRYNT HUB OFFICIAL LOADER ]] --
 
--- 1. Fetch your secret whitelist from GitHub
-local whitelistURL = "https://raw.githubusercontent.com/YourName/YourRepo/main/keys.lua"
-local success, result = pcall(function()
+-- Settings
+local inputKey = "KRYNT2026" -- The buyer enters their key here
+local whitelistURL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/keys.lua"
+local mainHubURL = "https://raw.githubusercontent.com/Krynttt/Krynt-Hub-Scripts/refs/heads/main/main.lua"
+
+print("---------------------------------")
+print("Initializing Krynt Hub...")
+print("---------------------------------")
+
+-- 1. Fetch Key Database
+local success, keysTable = pcall(function()
     return loadstring(game:HttpGet(whitelistURL))()
 end)
 
--- 2. Check if the fetching worked
-if not success or type(result) ~= "table" then
-    print("Error connecting to the key server.")
+-- 2. Check if Database is reachable
+if not success or type(keysTable) ~= "table" then
+    warn("Krynt Hub: Error connecting to server. Please try again later.")
     return
 end
 
--- 3. Verify the key
-if result[inputKey] then
-    print("Key Verified! Welcome to the Hub.")
+-- 3. Verify Key
+if keysTable[inputKey] then
+    print("Krynt Hub: Access Granted! Welcome.")
     
-    -- YOUR ACTUAL SCRIPT GOES BELOW HERE --
-    print("Loading game features...")
+    -- 4. Load the Actual Script
+    local loadStatus, err = pcall(function()
+        loadstring(game:HttpGet(mainHubURL))()
+    end)
     
+    if not loadStatus then
+        warn("Krynt Hub: Failed to execute main script. Error: " .. tostring(err))
+    end
 else
-    -- If the key isn't in your GitHub table
-    game.Players.LocalPlayer:Kick("Invalid Key! Purchase at Krynt's DGC.")
+    -- 5. Handle Invalid Key
+    local player = game.Players.LocalPlayer
+    player:Kick("\n[Krynt Hub Security]\nInvalid Key Detected!\n\nPlease purchase a valid license from Krynt's DGC.")
 end
-
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -150,7 +163,7 @@ local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
 
 local Window = Library:CreateWindow({
-    Title = "MKF Premium",
+    Title = "My Knife Farm🔪|Krynt Hub",
     Center = true,
     AutoShow = true,
     TabWidth = 160,
