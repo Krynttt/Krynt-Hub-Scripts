@@ -1,12 +1,14 @@
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser = game:GetService("VirtualUser")
+local GameEvents = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Game")
 
-local BuyCaseRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Game"):WaitForChild("CaseTriggered")
+local BuyCaseRemote = GameEvents:WaitForChild("CaseTriggered")
+local sellThisRemote = GameEvents:WaitForChild("SellThis")
+local SlotDropRemote = GameEvents:WaitForChild("SlotDrop")
 local spinRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Rewards"):WaitForChild("SpinRewards")
-local sellThisRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Game"):WaitForChild("SellThis")
 local spinAmountLabel = lp.PlayerGui:WaitForChild("SpinUI").MainFrame.SpinAmount
+local VirtualUser = game:GetService("VirtualUser")
 
 local myPlot = nil
 
@@ -43,6 +45,7 @@ local sellCFrame = baseModel.SellButton.SellP.CFrame * CFrame.new(0, 2, 0)
 local boxPrompt = baseModel.BoxStand:FindFirstChild("ProximityPrompt")
 
 local caseRarirites = {"Common", "Rare", "Epic", "Elite", "Legendary", "Mythic", "Secret", "Limited", "Exclusive", "Timeless", "Godly", "Soul", "Fruit", "Ninja", "Historical", "Shadow", "Frost", "Demon", "Arsenal"}
+local mutationList = {"Rusty", "Normal", "Golden", "Space", "Blood", "Dark", "Candy", "Rainbow", "Emerald", "Blue Gem"}
 local selectedChestRarities = {} 
 
 local function isMatch(selectedTable, value)
@@ -99,16 +102,22 @@ local function findMatchingChest()
 end
 
 local function fireFarPrompt(prompt)
-    if prompt and prompt:IsA("ProximityPrompt") then
-        local oldDist = prompt.MaxActivationDistance
-        local oldLos = prompt.RequiresLineOfSight
-        prompt.MaxActivationDistance = 9e9
-        prompt.RequiresLineOfSight = false
-        fireproximityprompt(prompt)
-        task.wait(0.05)
-        prompt.MaxActivationDistance = oldDist
-        prompt.RequiresLineOfSight = oldLos
-    end
+    pcall(function()
+        if prompt and prompt:IsA("ProximityPrompt") then
+            local oldDist = prompt.MaxActivationDistance
+            local oldLos = prompt.RequiresLineOfSight
+            prompt.MaxActivationDistance = 9e9
+            prompt.RequiresLineOfSight = false
+            fireproximityprompt(prompt)
+            task.spawn(function()
+                task.wait(0.05)
+                if prompt and prompt.Parent then
+                    prompt.MaxActivationDistance = oldDist
+                    prompt.RequiresLineOfSight = oldLos
+                end
+            end)
+        end
+    end)
 end
 
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -127,12 +136,19 @@ local Toggles = Library.Toggles
 local MainTab = Window:AddTab("MKF Premium", "box")
 
 local FarmBox = MainTab:AddLeftGroupbox("Economy & Farming")
-local PlotBox = MainTab:AddRightGroupbox("Plot & Chests")
+local ChestBox = MainTab:AddRightGroupbox("Chest Management")
+local PlotBox = MainTab:AddLeftGroupbox("Plot Control")
 
 FarmBox:AddDropdown("TargetCases", {
     Text = "Rarities to Auto Buy",
     Default = 1,
     Values = caseRarirites,
+    Multi = true,
+})
+
+FarmBox:AddDropdown("TargetMutations", {
+    Text = "Target Mutations (Optional)",
+    Values = mutationList,
     Multi = true,
 })
 
@@ -146,6 +162,8 @@ if conveyor:FindFirstChild("SpawnedCase") then
         task.spawn(function()
             task.wait(0.05)
             local rLabel = child:FindFirstChild("Rarity", true)
+            local mLabel = child:FindFirstChild("EventRarity", true)
+            
             if rLabel then
                 local timeout = 0
                 while (rLabel.Text == "" or rLabel.Text == "Label") and timeout < 50 do
@@ -154,9 +172,23 @@ if conveyor:FindFirstChild("SpawnedCase") then
                 end
                 
                 local curRarity = rLabel.Text
-                local targets = Options.TargetCases.Value
+                local curMutation = "Normal"
                 
-                if type(targets) == "table" and targets[curRarity] then
+                if mLabel and mLabel.Text ~= "" and mLabel.Text ~= "Label" then
+                    curMutation = mLabel.Text
+                end
+                
+                local targets = Options.TargetCases.Value
+                local mutations = Options.TargetMutations.Value
+                
+                local rarityMatch = (type(targets) == "table" and targets[curRarity])
+                local mutationMatch = true
+                
+                if type(mutations) == "table" and next(mutations) ~= nil then
+                    mutationMatch = mutations[curMutation]
+                end
+                
+                if rarityMatch and mutationMatch then
                     isBuying = true 
                     pcall(function() BuyCaseRemote:FireServer() end)
                     task.wait(0.6)
@@ -241,7 +273,7 @@ lp.Idled:Connect(function()
     end
 end)
 
-PlotBox:AddDropdown("ChestRarities", {
+ChestBox:AddDropdown("ChestRarities", {
     Text = "Chests to Place",
     Default = 1,
     Values = caseRarirites,
@@ -251,7 +283,7 @@ Options.ChestRarities:OnChanged(function()
     selectedChestRarities = Options.ChestRarities.Value
 end)
 
-PlotBox:AddToggle("AutoPlaceChest", { Text = "Auto Place Selected Chests", Default = false })
+ChestBox:AddToggle("AutoPlaceChest", { Text = "Auto Place Selected Chests", Default = false })
 Toggles.AutoPlaceChest:OnChanged(function()
     task.spawn(function()
         while Toggles.AutoPlaceChest.Value do
@@ -296,7 +328,7 @@ Toggles.AutoPlaceChest:OnChanged(function()
     end)
 end)
 
-PlotBox:AddToggle("AutoOpen", { Text = "Auto Open Chests (Physical)", Default = false })
+ChestBox:AddToggle("AutoOpen", { Text = "Auto Open Chests (Physical)", Default = false })
 Toggles.AutoOpen:OnChanged(function()
     task.spawn(function()
         while Toggles.AutoOpen.Value do
@@ -330,34 +362,37 @@ Toggles.AutoOpen:OnChanged(function()
     end)
 end)
 
-PlotBox:AddToggle("AutoDropKnife", { Text = "Auto Drop Knife Fast", Default = false })
-Toggles.AutoDropKnife:OnChanged(function()
+PlotBox:AddToggle("AutoDropKnives", { Text = "Auto Drop Knives Fast", Default = false })
+Toggles.AutoDropKnives:OnChanged(function()
     task.spawn(function()
-        while Toggles.AutoDropKnife.Value do
+        while Toggles.AutoDropKnives.Value do
             pcall(function()
                 local slotsFolder = myPlot.Plot_Models.BaseModel:FindFirstChild("Slots")
                 if slotsFolder then
                     for i = 1, 10 do
-                        local sObj = slotsFolder:FindFirstChild("Slot" .. i)
+                        local sName = "Slot" .. i
+                        local sObj = slotsFolder:FindFirstChild(sName)
+                        
                         if sObj then
                             local standModel = sObj:FindFirstChild("StandModel")
                             if standModel then
-                                for _, caseModel in ipairs(standModel:GetChildren()) do
-                                    if caseModel:IsA("Model") then
-                                        local prompts = caseModel:GetDescendants()
-                                        for _, prompt in ipairs(prompts) do
-                                            if prompt:IsA("ProximityPrompt") and prompt.ActionText ~= "Place" and prompt.ActionText ~= "Remove" then
-                                                fireFarPrompt(prompt)
-                                            end
-                                        end
+                                local hasPacket = false
+                                for _, child in ipairs(standModel:GetChildren()) do
+                                    if child:IsA("Model") then
+                                        hasPacket = true
+                                        break
                                     end
+                                end
+                                
+                                if hasPacket then
+                                    SlotDropRemote:FireServer(sName)
                                 end
                             end
                         end
                     end
                 end
             end)
-            task.wait() 
+            task.wait(1) 
         end
     end)
 end)
