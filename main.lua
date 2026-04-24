@@ -2,7 +2,7 @@
 
 -- Settings
 local inputKey = "KRYNT2026" -- The buyer enters their key here
-local whitelistURL = "https://raw.githubusercontent.com/YourUsername/YourRepo/main/keys.lua"
+local whitelistURL = "https://raw.githubusercontent.com/Krynttt/Krynt-Hub-Scripts/refs/heads/main/key.lua"
 local mainHubURL = "https://raw.githubusercontent.com/Krynttt/Krynt-Hub-Scripts/refs/heads/main/main.lua"
 
 print("---------------------------------")
