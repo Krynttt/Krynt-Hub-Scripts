@@ -1,54 +1,69 @@
--- 1. Create the UI Container
+-- 1. UI Setup (Manual)
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local ToggleBtn = Instance.new("TextButton")
-local UIListLayout = Instance.new("UIListLayout")
 
--- 2. Properties (Appearance)
-ScreenGui.Name = "KryntTestUI"
-ScreenGui.Parent = game.CoreGui -- This makes it stay even if you reset
-
-MainFrame.Name = "MainFrame"
+ScreenGui.Parent = game.CoreGui
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-MainFrame.Position = UDim2.new(0.5, -50, 0.5, -25) -- Center of screen
-MainFrame.Size = UDim2.new(0, 150, 0, 70)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 2
+MainFrame.Position = UDim2.new(0.5, -60, 0.2, 0) -- Top-middle of screen
+MainFrame.Size = UDim2.new(0, 120, 0, 50)
 MainFrame.Active = true
-MainFrame.Draggable = true -- Allows you to move it on mobile
+MainFrame.Draggable = true
 
-ToggleBtn.Name = "ToggleBtn"
 ToggleBtn.Parent = MainFrame
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0) -- Red (OFF)
-ToggleBtn.Size = UDim2.new(1, -10, 1, -10)
-ToggleBtn.Position = UDim2.new(0, 5, 0, 5)
-ToggleBtn.Text = "Auto Roll: OFF"
+ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+ToggleBtn.Text = "AUTO: OFF"
 ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.TextSize = 14
 
--- 3. Logic Variables
+-- 2. Variables
+local player = game.Players.LocalPlayer
 local active = false
-local path = workspace.Plots.Plot_1.Plot_Models.BaseModel.ButtonModel.PacketClick.ClickDetector
 
--- 4. Toggle Function
+-- 3. The Universal Searcher (Finds the plot you are standing on)
+local function getMyNearestDetector()
+    local nearestDetector = nil
+    local shortestDistance = 50 -- Only search within 50 studs
+
+    for _, p in pairs(workspace.Plots:GetChildren()) do
+        -- Try to find the ClickDetector using the path you provided
+        local success, detector = pcall(function()
+            return p.Plot_Models.BaseModel.ButtonModel.PacketClick.ClickDetector
+        end)
+
+        if success and detector and detector.Parent then
+            local distance = (player.Character.HumanoidRootPart.Position - detector.Parent.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                nearestDetector = detector
+            end
+        end
+    end
+    return nearestDetector
+end
+
+-- 4. Toggle Logic
 ToggleBtn.MouseButton1Click:Connect(function()
     active = not active
     
     if active then
-        ToggleBtn.Text = "Auto Roll: ON"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0) -- Green (ON)
+        ToggleBtn.Text = "AUTO: ON"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
         
-        -- Start the clicking loop
         task.spawn(function()
             while active do
-                if path then
-                    fireclickdetector(path)
+                local target = getMyNearestDetector()
+                if target then
+                    fireclickdetector(target)
                 end
                 task.wait(0.3)
             end
         end)
     else
-        ToggleBtn.Text = "Auto Roll: OFF"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0) -- Red
+        ToggleBtn.Text = "AUTO: OFF"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
     end
 end)
