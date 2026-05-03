@@ -59,7 +59,7 @@ ToggleBtn.MouseButton1Click:Connect(function()
                 if target then
                     fireclickdetector(target)
                 end
-                task.wait(0.3)
+                task.wait(0.01)
             end
         end)
     else
