@@ -9,22 +9,21 @@ local Window = OrionLib:MakeWindow({
     ConfigFolder = "KnifeFarmConfig"
 })
 
--- 3. SETUP YOUR PLOT LOGIC
+-- 3. SETUP PLAYER AND PLOT LOGIC
 local player = game.Players.LocalPlayer
-local myPlot = nil
 
--- This function looks for your plot
-local function findPlot()
+local function findMyPlot()
+    -- This looks through every plot to see if your name is part of the folder name
     for _, p in pairs(workspace.Plots:GetChildren()) do
-        local ownerValue = p:FindFirstChild("Owner")
-        if ownerValue and ownerValue.Value == player.Name then
+        if string.find(p.Name, player.Name) then
             return p
         end
     end
-    return nil
+    -- Fallback: If the game doesn't name the plot after you, we use Plot_7 as a backup
+    return workspace.Plots:FindFirstChild("Plot_7") 
 end
 
-myPlot = findPlot()
+local myPlot = findMyPlot()
 
 -- 4. CREATE THE TAB
 local MainTab = Window:MakeTab({
@@ -41,28 +40,26 @@ MainTab:AddToggle({
         _G.AutoRoll = Value
         
         if Value then
-            -- Refresh plot check in case it wasn't found at execution
-            if not myPlot then myPlot = findPlot() end
+            -- If plot wasn't found at startup, try finding it again
+            if not myPlot then myPlot = findMyPlot() end
             
             if myPlot then
+                -- This uses the exact path you found in Dex
                 local myButton = myPlot.Plot_Models.BaseModel.ButtonModel.PacketClick.ClickDetector
                 
                 task.spawn(function()
                     while _G.AutoRoll do
                         if myButton then
                             fireclickdetector(myButton)
+                        else
+                            warn("Button not found in path!")
+                            break
                         end
-                        task.wait(0.3) -- Cooldown for mobile stability
+                        task.wait(0.3)
                     end
                 end)
             else
-                -- Notify user if plot is still missing
-                OrionLib:MakeNotification({
-                    Name = "Plot Error",
-                    Content = "Could not find your plot. Try claiming one first!",
-                    Image = "rbxassetid://4483362458",
-                    Time = 5
-                })
+                warn("Could not find a plot associated with your name.")
             end
         end
     end    
