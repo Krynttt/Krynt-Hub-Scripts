@@ -1,48 +1,54 @@
--- 1. Load UI Library
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "Knife Farm Hub", HidePremium = false, SaveConfig = true})
+-- 1. Create the UI Container
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local ToggleBtn = Instance.new("TextButton")
+local UIListLayout = Instance.new("UIListLayout")
 
--- 2. Variables
-local player = game.Players.LocalPlayer
-local myPlot = nil
+-- 2. Properties (Appearance)
+ScreenGui.Name = "KryntTestUI"
+ScreenGui.Parent = game.CoreGui -- This makes it stay even if you reset
 
--- 3. Find YOUR Plot (Dynamic replacement for Plot_1)
-for _, p in pairs(workspace.Plots:GetChildren()) do
-    if p:FindFirstChild("Owner") and p.Owner.Value == player.Name then
-        myPlot = p
-        break
-    end
-end
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MainFrame.Position = UDim2.new(0.5, -50, 0.5, -25) -- Center of screen
+MainFrame.Size = UDim2.new(0, 150, 0, 70)
+MainFrame.Active = true
+MainFrame.Draggable = true -- Allows you to move it on mobile
 
--- 4. Create the UI Tab
-local MainTab = Window:MakeTab({
-    Name = "Auto Roll",
-    Icon = "rbxassetid://4483362458"
-})
+ToggleBtn.Name = "ToggleBtn"
+ToggleBtn.Parent = MainFrame
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0) -- Red (OFF)
+ToggleBtn.Size = UDim2.new(1, -10, 1, -10)
+ToggleBtn.Position = UDim2.new(0, 5, 0, 5)
+ToggleBtn.Text = "Auto Roll: OFF"
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 14
 
--- 5. The Toggle using your Correct Path
-MainTab:AddToggle({
-    Name = "Enable Auto-Roll",
-    Default = false,
-    Callback = function(Value)
-        _G.AutoRoll = Value
+-- 3. Logic Variables
+local active = false
+local path = workspace.Plots.Plot_1.Plot_Models.BaseModel.ButtonModel.PacketClick.ClickDetector
+
+-- 4. Toggle Function
+ToggleBtn.MouseButton1Click:Connect(function()
+    active = not active
+    
+    if active then
+        ToggleBtn.Text = "Auto Roll: ON"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0) -- Green (ON)
         
-        if Value and myPlot then
-            -- This uses your exact path, but starts from 'myPlot' instead of 'Plot_1'
-            local detector = myPlot.Plot_Models.BaseModel.ButtonModel.PacketClick.ClickDetector
-            
-            task.spawn(function()
-                while _G.AutoRoll do
-                    if detector then
-                        fireclickdetector(detector)
-                    end
-                    task.wait(0.3)
+        -- Start the clicking loop
+        task.spawn(function()
+            while active do
+                if path then
+                    fireclickdetector(path)
                 end
-            end)
-        elseif Value and not myPlot then
-            warn("Could not find your plot! Make sure you claimed one.")
-        end
-    end    
-})
-
-OrionLib:Init()
+                task.wait(0.3)
+            end
+        end)
+    else
+        ToggleBtn.Text = "Auto Roll: OFF"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0) -- Red
+    end
+end)
