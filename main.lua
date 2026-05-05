@@ -1,13 +1,13 @@
 -- ==========================================
--- KRYNT HUB V5: FUZZY SEARCH EDITION
+-- KRYNT HUB V6: GHOST TELEPORT & ANYWHERE BUY
 -- ==========================================
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
 
-if CoreGui:FindFirstChild("KryntHubV5") then
-    CoreGui.KryntHubV5:Destroy()
+if CoreGui:FindFirstChild("KryntHubV6") then
+    CoreGui.KryntHubV6:Destroy()
 end
 
 local CASES = {"Common", "Rare", "Epic", "Elite", "Legendary", "Mythic", "Secret", "Limited", "Exclusive", "Timeless", "Godly", "Soul", "Fruit", "Ninja", "Historical", "Shadow", "Frost", "Demon", "Arsenal"}
@@ -17,15 +17,16 @@ local SelectedCases = {}
 local SelectedMutations = {}
 local AutoBuyActive = false
 local AutoRollActive = false
+local SavedRollDetector = nil -- Saves your specific roll button
 
 -- ==========================================
--- 1. UI CONSTRUCTION (Same as V4)
+-- 1. UI CONSTRUCTION
 -- ==========================================
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "KryntHubV5"
+ScreenGui.Name = "KryntHubV6"
 
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 360, 0, 340)
+Main.Size = UDim2.new(0, 360, 0, 380)
 Main.Position = UDim2.new(0.5, -180, 0.3, 0)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Main.Draggable = true
@@ -33,7 +34,7 @@ Main.Active = true
 
 local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1, -30, 0, 30)
-Title.Text = " KRYNT HUB V5 (FUZZY SEARCH)"
+Title.Text = " KRYNT HUB V6 (GHOST BYPASS)"
 Title.TextColor3 = Color3.new(1,1,1)
 Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Title.Font = Enum.Font.Code
@@ -48,9 +49,19 @@ ExitBtn.Text = "X"
 ExitBtn.TextColor3 = Color3.new(1,1,1)
 ExitBtn.Font = Enum.Font.GothamBold
 
+-- SET ROLL TARGET BUTTON (NEW)
+local SetRollBtn = Instance.new("TextButton", Main)
+SetRollBtn.Size = UDim2.new(1, -20, 0, 30)
+SetRollBtn.Position = UDim2.new(0, 10, 0, 250)
+SetRollBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+SetRollBtn.Text = "1. STAND NEAR ROLL BUTTON & CLICK THIS"
+SetRollBtn.TextColor3 = Color3.new(1,1,1)
+SetRollBtn.Font = Enum.Font.Code
+SetRollBtn.TextSize = 12
+
 local RollBtn = Instance.new("TextButton", Main)
 RollBtn.Size = UDim2.new(0.5, -15, 0, 35)
-RollBtn.Position = UDim2.new(0, 10, 0, 250)
+RollBtn.Position = UDim2.new(0, 10, 0, 290)
 RollBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 150)
 RollBtn.Text = "AUTO ROLL: OFF"
 RollBtn.TextColor3 = Color3.new(1,1,1)
@@ -58,7 +69,7 @@ RollBtn.Font = Enum.Font.Code
 
 local BuyBtn = Instance.new("TextButton", Main)
 BuyBtn.Size = UDim2.new(0.5, -15, 0, 35)
-BuyBtn.Position = UDim2.new(0.5, 5, 0, 250)
+BuyBtn.Position = UDim2.new(0.5, 5, 0, 290)
 BuyBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 BuyBtn.Text = "AUTO BUY: OFF"
 BuyBtn.TextColor3 = Color3.new(1,1,1)
@@ -66,7 +77,7 @@ BuyBtn.Font = Enum.Font.Code
 
 local Status = Instance.new("TextLabel", Main)
 Status.Size = UDim2.new(1, 0, 0, 30)
-Status.Position = UDim2.new(0, 0, 0, 300)
+Status.Position = UDim2.new(0, 0, 0, 340)
 Status.Text = "Status: Idle"
 Status.TextColor3 = Color3.new(0.8, 0.8, 0.8)
 Status.BackgroundTransparency = 1
@@ -106,7 +117,7 @@ CreateScroll("Cases", 0.03, CASES, SelectedCases)
 CreateScroll("Mutations", 0.52, MUTATIONS, SelectedMutations)
 
 -- ==========================================
--- 2. SMART FUZZY SEARCH FUNCTIONS
+-- 2. CORE LOGIC & GHOST TELEPORT
 -- ==========================================
 
 local function getMutationCount()
@@ -115,41 +126,36 @@ local function getMutationCount()
     return count
 end
 
-local function getNearestClickDetector()
+-- NEW: The Ghost Clicker (Bypasses Distance Checks)
+local function ghostClick(cd)
     local char = lp.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    local rootPos = char.HumanoidRootPart.Position
-    local closest, shortestDist = nil, 20
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ClickDetector") and obj.Parent and obj.Parent:IsA("BasePart") then
-            local dist = (obj.Parent.Position - rootPos).Magnitude
-            if dist < shortestDist then
-                shortestDist = dist
-                closest = obj
-            end
-        end
-    end
-    return closest
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    if not cd or not cd.Parent or not cd.Parent:IsA("BasePart") then return end
+
+    local hrp = char.HumanoidRootPart
+    local originalPos = hrp.CFrame
+
+    -- Teleport to the button, wait a tiny fraction of a second for server to see you, click, and return
+    hrp.CFrame = cd.Parent.CFrame
+    task.wait(0.05) 
+    fireclickdetector(cd)
+    hrp.CFrame = originalPos
 end
 
--- NEW: Fuzzy Case Finder
 local function fireCase(caseName)
     local lowerCaseName = string.lower(caseName)
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("ClickDetector") then
-            -- Get the names of the part and the model holding it
             local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
             local modelName = obj.Parent and obj.Parent.Parent and string.lower(obj.Parent.Parent.Name) or ""
             
-            -- If the word (e.g. "arsenal") is inside "arsenal case", click it!
             if string.find(parentName, lowerCaseName) or string.find(modelName, lowerCaseName) then
-                fireclickdetector(obj)
+                ghostClick(obj)
             end
         end
     end
 end
 
--- NEW: Fuzzy Mutation Finder
 local function hasTargetMutation()
     if getMutationCount() == 0 then return false end
     
@@ -158,9 +164,7 @@ local function hasTargetMutation()
     
     for mutName, _ in pairs(SelectedMutations) do
         local lowerMut = string.lower(mutName)
-        -- Scan EVERYTHING inside the Events folder
         for _, v in pairs(events:GetDescendants()) do
-            -- Match the Name of the object or the Value if it's a string
             if string.find(string.lower(v.Name), lowerMut) then return true end
             if v:IsA("StringValue") and string.find(string.lower(tostring(v.Value)), lowerMut) then return true end
         end
@@ -178,18 +182,49 @@ ExitBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+SetRollBtn.MouseButton1Click:Connect(function()
+    local char = lp.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local rootPos = char.HumanoidRootPart.Position
+    local closest, shortestDist = nil, 20
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ClickDetector") and obj.Parent and obj.Parent:IsA("BasePart") then
+            local dist = (obj.Parent.Position - rootPos).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                closest = obj
+            end
+        end
+    end
+    
+    if closest then
+        SavedRollDetector = closest
+        SetRollBtn.Text = "TARGET SAVED! YOU CAN WALK AWAY."
+        SetRollBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    else
+        SetRollBtn.Text = "NO BUTTON FOUND NEARBY!"
+        SetRollBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    end
+end)
+
 RollBtn.MouseButton1Click:Connect(function()
+    if not SavedRollDetector then
+        Status.Text = "Status: Set Roll Target first!"
+        return
+    end
+
     AutoRollActive = not AutoRollActive
     RollBtn.Text = AutoRollActive and "AUTO ROLL: ON" or "AUTO ROLL: OFF"
     RollBtn.BackgroundColor3 = AutoRollActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(100, 0, 150)
     
     if AutoRollActive then
-        Status.Text = "Status: Rolling nearest button..."
+        Status.Text = "Status: Ghost Rolling..."
         task.spawn(function()
             while AutoRollActive do
-                local target = getNearestClickDetector()
-                if target then fireclickdetector(target) end
-                task.wait(0.05)
+                if SavedRollDetector then ghostClick(SavedRollDetector) end
+                task.wait(0.1) -- Slightly slower so character physics don't break
             end
         end)
     end
@@ -223,7 +258,7 @@ BuyBtn.MouseButton1Click:Connect(function()
                 for caseName, _ in pairs(SelectedCases) do
                     fireCase(caseName)
                 end
-                task.wait(0.1)
+                task.wait(0.2)
             end
         end)
     end
