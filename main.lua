@@ -1,127 +1,169 @@
--- [[ KRYNT HUB - MY KNIFE FARM ]]
+-- [[ KRYNT HUB - MY KNIFE FARM V4 (ADVANCED SNIPER) ]]
 
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CaseRemote = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Game"):WaitForChild("CaseTriggered")
+
+-- // CONFIGURATION TABLES //
+_G.AutoRoll = false
+_G.AutoBuy = false
+
+local SelectedCases = {}
+local SelectedMutations = {}
+
+local CasesList = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Arsenal"}
+local MutationsList = {"Rusty", "Normal", "Golden", "Space", "Blood", "Dark", "Candy", "Rainbow", "Emerald", "Blue Gem"}
 
 -- // UI SETUP //
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KryntHub_Final"
-ScreenGui.Parent = CoreGui
+ScreenGui.Name = "KryntHub_Advanced"
+ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 350, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -175, 0.3, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(0.5, -100, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 200, 0, 160)
-MainFrame.Active = true
 MainFrame.Draggable = true
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true -- Required for minimize effect
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
 
 local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "KRYNT HUB"
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Text = "KRYNT HUB: ADVANCED SNIPER"
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 18
+Title.Parent = MainFrame
 
--- Minimize Button (-)
-local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Parent = MainFrame
-MinimizeBtn.Position = UDim2.new(0.7, 0, 0, 5)
-MinimizeBtn.Size = UDim2.new(0, 20, 0, 20)
-MinimizeBtn.Text = "-"
-MinimizeBtn.TextColor3 = Color3.new(1, 1, 1)
-MinimizeBtn.BackgroundTransparency = 1
-MinimizeBtn.TextSize = 20
+-- Scrolling Frames for Selection
+local function createScroll(pos, titleText)
+    local label = Instance.new("TextLabel", MainFrame)
+    label.Size = UDim2.new(0.45, 0, 0, 20)
+    label.Position = UDim2.new(pos.X.Scale, 0, 0.15, 0)
+    label.Text = titleText
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.new(1, 1, 1)
 
--- Exit Button (X)
-local ExitBtn = Instance.new("TextButton")
-ExitBtn.Parent = MainFrame
-ExitBtn.Position = UDim2.new(0.85, 0, 0, 5)
-ExitBtn.Size = UDim2.new(0, 20, 0, 20)
-ExitBtn.Text = "X"
-ExitBtn.TextColor3 = Color3.new(1, 0, 0)
-ExitBtn.BackgroundTransparency = 1
-ExitBtn.TextSize = 16
+    local scroll = Instance.new("ScrollingFrame", MainFrame)
+    scroll.Size = UDim2.new(0.45, 0, 0, 120)
+    scroll.Position = UDim2.new(pos.X.Scale, 0, 0.22, 0)
+    scroll.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    scroll.CanvasSize = UDim2.new(0, 0, 2, 0)
+    scroll.ScrollBarThickness = 4
+    
+    local layout = Instance.new("UIListLayout", scroll)
+    layout.Padding = UDim.new(0, 2)
+    return scroll
+end
 
--- Toggle Button (ON/OFF)
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Parent = MainFrame
-ToggleBtn.Position = UDim2.new(0.1, 0, 0.35, 0)
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleBtn.Text = "Auto-Roll: OFF"
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.TextSize = 16
+local CaseScroll = createScroll(UDim2.new(0.02, 0, 0, 0), "SELECT CASES")
+local MutScroll = createScroll(UDim2.new(0.53, 0, 0, 0), "SELECT MUTATIONS")
+
+-- Populate Selection Buttons
+local function populate(list, scroll, targetTable)
+    for _, name in pairs(list) do
+        local btn = Instance.new("TextButton", scroll)
+        btn.Size = UDim2.new(1, -5, 0, 25)
+        btn.Text = name
+        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        btn.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+        
+        btn.MouseButton1Click:Connect(function()
+            if targetTable[name] then
+                targetTable[name] = nil
+                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                btn.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+            else
+                targetTable[name] = true
+                btn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+                btn.TextColor3 = Color3.new(1, 1, 1)
+            end
+        end)
+    end
+end
+
+populate(CasesList, CaseScroll, SelectedCases)
+populate(MutationsList, MutScroll, SelectedMutations)
+
+-- Main Controls
+local RollBtn = Instance.new("TextButton", MainFrame)
+RollBtn.Size = UDim2.new(0.45, 0, 0, 35); RollBtn.Position = UDim2.new(0.02, 0, 0.7, 0); RollBtn.Text = "AUTO-ROLL: OFF"; RollBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+
+local BuyBtn = Instance.new("TextButton", MainFrame)
+BuyBtn.Size = UDim2.new(0.45, 0, 0, 35); BuyBtn.Position = UDim2.new(0.53, 0, 0, 7, 0); BuyBtn.Position = UDim2.new(0.53, 0, 0.7, 0); BuyBtn.Text = "AUTO-BUY: OFF"; BuyBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 
 -- // LOGIC //
-_G.AutoRoll = false
 
 local function getMyPlot()
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return nil end
-    for _, plot in pairs(plots:GetChildren()) do
-        if plot:GetAttribute("Owner") == lp.UserId then
-            return plot
-        end
+    for _, plot in pairs(workspace.Plots:GetChildren()) do
+        if plot:GetAttribute("Owner") == lp.UserId then return plot end
     end
-    return nil
 end
 
 task.spawn(function()
     while true do
-        if _G.AutoRoll then
-            pcall(function()
-                local myPlot = getMyPlot()
-                if myPlot then
-                    -- Navigating your specific Dex path
-                    local models = myPlot:FindFirstChild("Plot_Models")
-                    local base = models and models:FindFirstChild("BaseModel")
-                    local billboard = base and base:FindFirstChild("BillBoardC")
-                    local packet = billboard and billboard:FindFirstChild("PacketClick")
-                    local cd = packet and packet:FindFirstChild("ClickDetector")
+        local plot = getMyPlot()
+        if plot then
+            local packet = plot:FindFirstChild("PacketClick", true)
+            
+            -- AUTO ROLL
+            if _G.AutoRoll and packet and packet:FindFirstChild("ClickDetector") then
+                fireclickdetector(packet.ClickDetector)
+            end
 
-                    if cd then
-                        fireclickdetector(cd)
+            -- AUTO BUY (SMART FILTER)
+            if _G.AutoBuy and packet then
+                local textObj = packet:FindFirstChildOfClass("TextLabel", true) or packet:FindFirstChildOfClass("StringValue", true)
+                if textObj then
+                    local content = string.lower(textObj:IsA("TextLabel") and textObj.Text or textObj.Value)
+                    
+                    -- Check if any selected Case is in the text
+                    local caseMatched = false
+                    for caseName, _ in pairs(SelectedCases) do
+                        if string.find(content, string.lower(caseName)) then caseMatched = true break end
+                    end
+
+                    if caseMatched then
+                        -- Check Mutation Filter
+                        local mutCount = 0
+                        for _ in pairs(SelectedMutations) do mutCount = mutCount + 1 end
+
+                        if mutCount == 0 then
+                            -- No mutation selected? Buy the case regardless
+                            CaseRemote:FireServer()
+                            task.wait(0.4)
+                        else
+                            -- Mutation selected? Only buy if it matches
+                            for mutName, _ in pairs(SelectedMutations) do
+                                if string.find(content, string.lower(mutName)) then
+                                    CaseRemote:FireServer()
+                                    task.wait(0.4)
+                                    break
+                                end
+                            end
+                        end
                     end
                 end
-            end)
+            end
         end
-        task.wait(0.001)
+        task.wait(0.01)
     end
 end)
 
--- // BUTTON CONNECTIONS //
-
--- Toggle Logic
-ToggleBtn.MouseButton1Click:Connect(function()
+-- Button Connections
+RollBtn.MouseButton1Click:Connect(function()
     _G.AutoRoll = not _G.AutoRoll
-    ToggleBtn.Text = _G.AutoRoll and "Auto-Roll: ON" or "Auto-Roll: OFF"
-    ToggleBtn.BackgroundColor3 = _G.AutoRoll and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(180, 50, 50)
+    RollBtn.Text = "AUTO-ROLL: " .. (_G.AutoRoll and "ON" or "OFF")
+    RollBtn.BackgroundColor3 = _G.AutoRoll and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
 end)
 
--- Minimize Logic
-local minimized = false
-MinimizeBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    if minimized then
-        MainFrame:TweenSize(UDim2.new(0, 200, 0, 30), "Out", "Quad", 0.3, true)
-    else
-        MainFrame:TweenSize(UDim2.new(0, 200, 0, 160), "Out", "Quad", 0.3, true)
-    end
+BuyBtn.MouseButton1Click:Connect(function()
+    _G.AutoBuy = not _G.AutoBuy
+    BuyBtn.Text = "AUTO-BUY: " .. (_G.AutoBuy and "ON" or "OFF")
+    BuyBtn.BackgroundColor3 = _G.AutoBuy and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
 end)
 
--- Exit Logic
-ExitBtn.MouseButton1Click:Connect(function()
-    _G.AutoRoll = false
-    ScreenGui:Destroy()
-end)
-
-print("Krynt Hub: Final Version Loaded")
+local Exit = Instance.new("TextButton", MainFrame)
+Exit.Size = UDim2.new(0, 20, 0, 20); Exit.Position = UDim2.new(0.9, 0, 0, 5); Exit.Text = "X"; Exit.TextColor3 = Color3.new(1,0,0); Exit.BackgroundTransparency = 1
+Exit.MouseButton1Click:Connect(function() _G.AutoRoll = false; _G.AutoBuy = false; ScreenGui:Destroy() end)
