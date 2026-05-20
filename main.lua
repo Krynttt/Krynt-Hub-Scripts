@@ -1,5 +1,3 @@
-
-```lua
 if not game.Loaded then game.Loaded:Wait() end
 task.wait(3)
 local username = game:GetService("Players").LocalPlayer.Name
